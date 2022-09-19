@@ -32,10 +32,13 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
     address public fundAddress;
     uint256 public commissionRate;
+    string private baseURI;
 
     using SafeMath for uint256;
     uint public constant mintPrice = 0;
     uint256 total_value;
+
+    mapping(uint256 => string) private _tokenURIs;
 
     constructor() ERC721("Celebrity.sg", "Celebrity.sg"){}
 
@@ -47,24 +50,62 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         super._burn(tokenId);
     }
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns(string memory){
-        return super.tokenURI(tokenId);
-    }
+    // function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns(string memory){
+    //     return super.tokenURI(tokenId);
+    // }
+     function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, ERC721URIStorage) 
+        returns (string memory)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721URIStorage: URI query for nonexistent token"
+        );
 
+        string memory _tokenURI = _tokenURIs[tokenId];
+        string memory base = _baseURI();
+
+        // If there is no base URI, return the token URI.
+        if (bytes(base).length == 0) {
+            return _tokenURI;
+        }
+        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+        if (bytes(_tokenURI).length > 0) {
+            return string(abi.encodePacked(base, _tokenURI));
+        }
+
+        return super.tokenURI(tokenId);
+    } 
+
+   function _setTokenURI(uint256 tokenId, string memory _tokenURI)
+        internal
+        virtual
+        override 
+    {
+        require(
+            _exists(tokenId),
+            "ERC721URIStorage: URI set of nonexistent token"
+        );
+        _tokenURIs[tokenId] = _tokenURI;
+    } 
+   
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool){
         return super.supportsInterface(interfaceId);
     }
 
-
+    
     // function mint(string memory _uri, address recipient) public payable {
     //     uint256 mintIndex = totalSupply() + 1000001;
     //     _safeMint(recipient, mintIndex);
     //     _setTokenURI(mintIndex, _uri);
     // }
 
-    // function returnID() public view returns(uint256){
-    //     return totalSupply();
-    // }
+    function returnID() public view returns(uint256){
+        return totalSupply();
+    }
 
     // function charge(address payable receiverAddr) payable public{
     //     receiverAddr.transfer(msg.value);
@@ -125,5 +166,5 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     function setFundAddress(address _fundAddress) external onlyOwner {
         fundAddress = _fundAddress;
     }
-
+    
 }
