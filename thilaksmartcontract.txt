@@ -1,0 +1,129 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+
+     struct BuyNFTStruct {
+        string id;
+        uint256 price;
+        address tokenAddress;
+        address refAddress;
+        string nonce;
+        string uri;
+        // bytes signature;
+     }
+
+      event BuyEvent(
+        address indexed user,
+        string id,
+        uint256 tokenId,
+        string nonce,
+        address tokenAddress,
+        uint256 price,
+        uint64 timestamp
+     ); 
+
+    address public fundAddress;
+    uint256 public commissionRate;
+
+    using SafeMath for uint256;
+    uint public constant mintPrice = 0;
+    uint256 total_value;
+
+    constructor() ERC721("Celebrity.sg", "Celebrity.sg"){}
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override(ERC721, ERC721Enumerable){
+        super._beforeTokenTransfer(from,to,tokenId);
+    }
+
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage){
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns(string memory){
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool){
+        return super.supportsInterface(interfaceId);
+    }
+
+
+    // function mint(string memory _uri, address recipient) public payable {
+    //     uint256 mintIndex = totalSupply() + 1000001;
+    //     _safeMint(recipient, mintIndex);
+    //     _setTokenURI(mintIndex, _uri);
+    // }
+
+    // function returnID() public view returns(uint256){
+    //     return totalSupply();
+    // }
+
+    // function charge(address payable receiverAddr) payable public{
+    //     receiverAddr.transfer(msg.value);
+    // }
+
+    function buyNFT(BuyNFTStruct calldata data) public payable {
+
+        uint256 refAmount;
+        uint256 price = data.price;
+
+        if (data.refAddress != address(0)) {
+            refAmount = (data.price * commissionRate) / 100;
+            price = data.price - refAmount;
+        }
+
+        // Transfer payment
+        if (data.tokenAddress == address(0)) {
+            require(msg.value >= data.price, "Not enough money");
+            (bool success, ) = fundAddress.call{value: price}("");
+            require(success, "Transfer payment to admin failed");
+            if (refAmount != 0) {
+                (success, ) =  data.refAddress.call{value: refAmount}("");
+                require(success, "Transfer payment to ref failed");
+            }
+        } else {
+            IERC20Upgradeable(data.tokenAddress).transferFrom(
+                msg.sender,
+                fundAddress,
+                price
+            );
+            if (refAmount != 0) {
+                IERC20Upgradeable(data.tokenAddress).transferFrom(
+                    msg.sender,
+                    data.refAddress,
+                    refAmount
+                );
+            }
+        }
+        uint256 mintIndex = totalSupply() + 1000001;
+        _safeMint(_msgSender(), mintIndex);
+        _setTokenURI(mintIndex, data.uri);
+
+        emit BuyEvent(
+            _msgSender(),
+            data.id,
+            mintIndex,
+            data.nonce,
+            data.tokenAddress,
+            data.price,
+            uint64(block.timestamp)
+        );
+    }
+    
+    function TransferOwnership(address newOwner) public onlyOwner {
+        transferOwnership(newOwner);
+    }
+
+    function setFundAddress(address _fundAddress) external onlyOwner {
+        fundAddress = _fundAddress;
+    }
+
+}
