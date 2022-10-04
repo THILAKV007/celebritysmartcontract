@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+contract IndianfilimtitlesNFT is ERC721, ERC721Enumerable, Ownable {
 
      struct BuyNFTStruct {
         string id;
@@ -33,30 +31,25 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     uint256 public commissionRate;
     string private baseURI;
 
-    using SafeMath for uint256;
     uint public constant mintPrice = 0;
     uint256 total_value;
 
     mapping(uint256 => string) private _tokenURIs;
 
-    constructor() ERC721("Celebrity.sg", "Celebrity.sg"){
+    constructor() ERC721("Indianfilmtitles.com", "Indianfilmtitles.com"){
         commissionRate=10;
+        fundAddress= msg.sender;
     }
 
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override(ERC721, ERC721Enumerable){
+     function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override(ERC721, ERC721Enumerable){
         super._beforeTokenTransfer(from,to,tokenId);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage){
-        super._burn(tokenId);
-    }
-
      function tokenURI(uint256 tokenId)
-        public
+      public
         view
         virtual
-        override(ERC721, ERC721URIStorage) 
+        override
         returns (string memory)
     {
         require(
@@ -81,8 +74,7 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
    function _setTokenURI(uint256 tokenId, string memory _tokenURI)
         internal
-        virtual
-        override 
+        virtual 
     {
         require(
             _exists(tokenId),
@@ -93,10 +85,6 @@ contract CelebrityNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
    
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool){
         return super.supportsInterface(interfaceId);
-    }
-
-    function returnID() public view returns(uint256){
-        return totalSupply();
     }
 
     function buyNFT(BuyNFTStruct calldata data) public payable {
